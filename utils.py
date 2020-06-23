@@ -48,6 +48,9 @@ def draw_boxes(img_names, boxes_dicts, class_names, model_size):
         None.
     """
     colors = ((np.array(color_palette("hls", 80)) * 255)).astype(np.uint8)
+
+    res = []
+
     for num, img_name, boxes_dict in zip(range(len(img_names)), img_names,
                                          boxes_dicts):
         img = Image.open(img_name)
@@ -79,10 +82,12 @@ def draw_boxes(img_names, boxes_dicts, class_names, model_size):
                               font=font)
                     print('{} {:.2f}%'.format(class_names[cls],
                                               confidence * 100))
+                    res.append({class_names[cls]: confidence * 100})
 
         rgb_img = img.convert('RGB')
 
         rgb_img.save('./detections/detection_' + str(num + 1) + '.jpg')
+        return res
 
 
 def draw_frame(frame, frame_size, boxes_dicts, class_names, model_size):

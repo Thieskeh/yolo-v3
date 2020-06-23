@@ -11,7 +11,7 @@ Example:
 
 Note that only one video can be processed at one run.
 """
-
+import pika as pika
 import tensorflow as tf
 import sys
 import cv2
@@ -45,10 +45,15 @@ def main(type, iou_threshold, confidence_threshold, input_names):
         with tf.compat.v1.Session() as sess:
             saver.restore(sess, './weights/model.ckpt')
             detection_result = sess.run(detections, feed_dict={inputs: batch})
-
-        draw_boxes(input_names, detection_result, class_names, _MODEL_SIZE)
-
+            pass
+        res = draw_boxes(input_names, detection_result, class_names, _MODEL_SIZE)
+        filtered_cars = [x for x in res if x.get("car") and x.get("car") > 60.0]
+        filtered_persons = [x for x in res if x.get("person") and x.get("person") > 60.0]
         print('Detections have been saved successfully.')
+
+        print(f'Number of persons: {len(filtered_persons)}')
+        print(f'Number of cars: {len(filtered_cars)}')
+        put_res_on_queue({"nmr_of_cars": len(filtered_cars), "nrm_of_persons": len(filtered_persons)})
 
     elif type == 'video':
         inputs = tf.compat.v1.placeholder(tf.float32, [1, *_MODEL_SIZE, 3])
@@ -140,6 +145,15 @@ def main(type, iou_threshold, confidence_threshold, input_names):
 
     else:
         raise ValueError("Inappropriate data type. Please choose either 'video' or 'images'.")
+
+
+def put_res_on_queue(res):
+    credentials = pika.PlainCredentials('rabbitmq', 'rabbitmq')
+    connection = pika.BlockingConnection(pika.ConnectionParameters('localhost', credentials=credentials))
+    channel = connection.channel()
+    channel.basic_publish(exchange='crowd_detector',
+                          routing_key='groen',
+                          body=str(res))
 
 
 if __name__ == '__main__':
