@@ -15,6 +15,7 @@ import pika as pika
 import tensorflow as tf
 import sys
 import cv2
+from datetime import datetime
 
 from yolo_v3 import Yolo_v3
 from utils import load_images, load_class_names, draw_boxes, draw_frame
@@ -26,7 +27,7 @@ _CLASS_NAMES_FILE = './data/labels/coco.names'
 _MAX_OUTPUT_SIZE = 20
 
 
-def main(type, iou_threshold, confidence_threshold, input_names):
+def main(type, iou_threshold, confidence_threshold, venue, input_names ):
     class_names = load_class_names(_CLASS_NAMES_FILE)
     n_classes = len(class_names)
 
@@ -53,7 +54,9 @@ def main(type, iou_threshold, confidence_threshold, input_names):
 
         print(f'Number of persons: {len(filtered_persons)}')
         print(f'Number of cars: {len(filtered_cars)}')
-        put_res_on_queue({"nmr_of_cars": len(filtered_cars), "nrm_of_persons": len(filtered_persons)})
+        put_res_on_queue({"nmr_of_cars": len(filtered_cars), "nrm_of_persons": len(filtered_persons),
+                          "time_generated": int(datetime.now().timestamp()),
+                          "venue": venue})
 
     elif type == 'video':
         inputs = tf.compat.v1.placeholder(tf.float32, [1, *_MODEL_SIZE, 3])
@@ -157,4 +160,7 @@ def put_res_on_queue(res):
 
 
 if __name__ == '__main__':
-    main(sys.argv[1], float(sys.argv[2]), float(sys.argv[3]), sys.argv[4:])
+
+    ff = sys.argv
+
+    main(sys.argv[1], float(sys.argv[2]), float(sys.argv[3]), sys.argv[4], sys.argv[5:])
